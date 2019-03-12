@@ -1,2 +1,2 @@
-# producertoconsumer
-Producer to Consumer Repository for CIS 3207 at T.U.
+# networkspellchecker
+Network Spell Checker Repository for CIS 3207 at T.U.
