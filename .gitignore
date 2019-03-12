@@ -1,0 +1,4 @@
+output
+main.o
+producer.o
+consumer.o
