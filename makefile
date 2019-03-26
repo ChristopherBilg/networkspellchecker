@@ -1,6 +1,3 @@
-# -lpthread
-# -pthread
-
 output: main.o fifo_queue.o open_listenfd.o
 	gcc -o output main.o fifo_queue.o open_listenfd.o -lpthread
 
