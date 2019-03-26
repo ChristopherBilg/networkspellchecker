@@ -18,9 +18,11 @@
 #define NUM_WORKERS 2
 #define NUM_LOGGERS 1
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t dataNotProduced = PTHREAD_COND_INITIALIZER;
-pthread_cond_t dataNotConsumed = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t job_buffer_lock;
+pthread_mutex_t log_buffer_lock;
+
+struct Queue *job_buffer;
+struct Queue *log_buffer;
 
 int main(int argc, char **argv) {
   int port;
@@ -57,9 +59,13 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  // Setup the fifo_queues for the two C/P buffers
-  struct Queue *job_buffer = createQueue();
-  struct Queue *log_buffer = createQueue();
+  // Initialize the fifo_queues for the two C/P buffers
+  job_buffer = createQueue();
+  log_buffer = createQueue();
+
+  // Initialize the mutex locks
+  pthread_mutex_init(&job_buffer_lock, NULL);
+  pthread_mutex_init(&log_buffer_lock, NULL);
 
   // Setup the dictionary array
   char *dictionary_list[DICTIONARY_SIZE];
@@ -111,6 +117,9 @@ int main(int argc, char **argv) {
   }
 
   printf("Server on port %d exited successfully.\n", port);
+
+  pthread_mutex_destroy(&job_buffer_lock);
+  pthread_mutex_destroy(&log_buffer_lock);
   return EXIT_SUCCESS;
 }
 
@@ -129,9 +138,18 @@ void *worker_thread(void *params) {
 void *logger_thread(void *params) {
   while(1) {
     // dequeue item from log buffer (critical section)
+    char *word;
+    pthread_mutex_lock(&log_buffer_lock);
+    word = dequeue(log_buffer)->word;
+    pthread_mutex_unlock(&log_buffer_lock);
+    
     // open log.txt file and write item to file
+    FILE *log_file = fopen(DEFAULT_LOG_FILE, "a");
+    fputs(word, log_file);
+    fputc('\n', log_file);
+
     // close log.txt file
-    break;
+    fclose(log_file);
   }
   
   return NULL;
