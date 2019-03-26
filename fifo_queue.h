@@ -5,7 +5,7 @@
 
 struct Node {
   struct my_client client;
-  char *word; // only used if fd value is -1
+  char *word;
   struct Node *next;
 };
 
