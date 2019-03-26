@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unistd.h>
 #include "fifo_queue.h"
 #include "main.h"
 #include "open_listenfd.h"
@@ -12,6 +13,7 @@
 
 #define DEFAULT_DICTIONARY "words.txt"
 #define DEFAULT_LOG_FILE "log.txt"
+#define DEFAULT_DELIMITER " \t\r\n\a"
 #define DICTIONARY_SIZE 100000
 #define BUFFER_SIZE 256
 #define DEFAULT_PORT 8010
@@ -20,16 +22,19 @@
 
 pthread_mutex_t job_buffer_lock;
 pthread_mutex_t log_buffer_lock;
+pthread_mutex_t log_file_lock;
 
 struct Queue *job_buffer;
 struct Queue *log_buffer;
+
+char *dictionary_list[DICTIONARY_SIZE];
 
 int main(int argc, char **argv) {
   int port;
   char *dictionary;
   FILE *dictionary_fd;
 
-  if(argc == 3) {
+  if(argc >= 3) {
     port = atoi(argv[1]);
     dictionary = argv[2];
   }
@@ -38,7 +43,7 @@ int main(int argc, char **argv) {
     port = atoi(argv[1]);
     dictionary = DEFAULT_DICTIONARY;
   }
-  else if (argc == 1) {
+  else {
     printf("No port number given to start the server on. Using default port.\n");
     printf("No dictionary file given. Using default dictionary.\n");
     port = DEFAULT_PORT;
@@ -58,7 +63,7 @@ int main(int argc, char **argv) {
     printf("Dictionary given not found. Please give a valid dictionary file name.\n");
     return EXIT_FAILURE;
   }
-
+  
   // Initialize the fifo_queues for the two C/P buffers
   job_buffer = createQueue();
   log_buffer = createQueue();
@@ -66,9 +71,9 @@ int main(int argc, char **argv) {
   // Initialize the mutex locks
   pthread_mutex_init(&job_buffer_lock, NULL);
   pthread_mutex_init(&log_buffer_lock, NULL);
-
+  pthread_mutex_init(&log_file_lock, NULL);
+  
   // Setup the dictionary array
-  char *dictionary_list[DICTIONARY_SIZE];
   char line[BUFFER_SIZE];
   int index = 0;
   while (fgets(line, sizeof(line), dictionary_fd) && index < DICTIONARY_SIZE) {
@@ -93,7 +98,7 @@ int main(int argc, char **argv) {
   pthread_t loggers[NUM_LOGGERS];
   for (int i=0; i<NUM_LOGGERS; i++)
     loggers[i] = pthread_create(&loggers[i], NULL, &logger_thread, log_buffer);
-
+  
   char *conn_success = "Connected to server. Please wait for further instructions.\n";
   while(1) {
     // Setup socket
@@ -103,15 +108,15 @@ int main(int argc, char **argv) {
     client.connection_socket = open_listenfd(port);
     if (client.connection_socket == -1)
       continue;
-
+    
     // Accept connection
-    // TODO: THIS MIGHT NOT WORK BECAUSE OF THE WHILE LOOP: TRY NO WHILE LOOP
-    client.client_socket = accept(client.connection_socket,
-                                  (struct sockaddr *)&client.client,
-                                  &client.client_size);
+    client.client_socket = accept(client.connection_socket, (struct sockaddr *)&client.client, &client.client_size);
+    if (client.client_socket == -1)
+      continue;
+    
     printf("Connected to a new client!\n");
     send(client.client_socket, conn_success, strlen(conn_success), 0);
-
+    
     // Put it into the job queue
     enqueue(job_buffer, client, NULL);
   }
@@ -124,34 +129,117 @@ int main(int argc, char **argv) {
 }
 
 void *worker_thread(void *params) {
+  char *prompt_msg = "Words to be spell checked (separate with a space): ";
+  char *close_msg = "You can closed the connection with the server.\n";
+  char *error_msg = "The message didn't come through correctly. Please send it again.\n";
+  char recv_buffer[BUFFER_SIZE];
+
   while (1) {
-    // dequeue connection file descriptor from job queue
+    // Safely dequeue connection socket information from job queue
+    pthread_mutex_lock(&job_buffer_lock);
+    if (job_buffer->queue_size <= 0) {
+      pthread_mutex_unlock(&job_buffer_lock);
+      continue;
+    }
+    
+    struct Node *job = dequeue(job_buffer);
+    pthread_mutex_unlock(&job_buffer_lock);
+
+    // Get the client struct
+    struct my_client client = job->client;
+
     // communicate with client through recv()/send()
-    // do the above with the spell check
-    // enqueue the result for each spell check into the log queue
-    break;
+    while (1) {
+      send(client.client_socket, prompt_msg, strlen(prompt_msg), 0);
+      client.bytes_returned = recv(client.client_socket, recv_buffer, BUFFER_SIZE, 0);
+
+      // Handle the message (error, exit, etc.)
+      if (client.bytes_returned == -1) {
+        send(client.client_socket, error_msg, strlen(error_msg), 0);
+        continue;
+      }
+      else if (recv_buffer[0] == 27) {
+        send(client.client_socket, close_msg, strlen(close_msg), 0);
+        close(client.client_socket);
+        break;
+      }
+      else {
+        char **all_words = malloc(BUFFER_SIZE * sizeof(char *));
+        char *current_word;
+        int buf_size = BUFFER_SIZE;
+
+        int str_len = strlen(recv_buffer);
+        if (recv_buffer[str_len-1] == '\n')
+          recv_buffer[str_len-1] = '\0';
+
+        current_word = strtok(recv_buffer, DEFAULT_DELIMITER);
+        int index = 0;
+        while (current_word != NULL) {
+          all_words[index] = current_word;
+          index++;
+
+          if (index >= buf_size) {
+            buf_size *= 2;
+            void *temp = realloc(all_words, buf_size * sizeof(char *));
+
+            if (temp == NULL)
+              free(temp);
+          }
+
+          current_word = strtok(NULL, DEFAULT_DELIMITER);
+        }
+
+        // handle the spell checking
+        char *validity = "WRONG";
+        int i1 = 0;
+        int i2 = 0;
+        while (all_words[i1] != NULL) {
+          while (dictionary_list[i2] != NULL) {
+            if (all_words[i1] == dictionary_list[i2])
+              validity = "CORRECT";
+            i2++;
+          }
+
+          // respond with results
+          // put the reponse into the log queue
+
+          validity = "WRONG";
+          i1++;
+        }
+      }
+    }
   }
-  
+
   return NULL;
 }
 
 void *logger_thread(void *params) {
   while(1) {
-    // Aquire the lock
+    // Safely dequeue from the log buffer
     pthread_mutex_lock(&log_buffer_lock);
-    char *word = dequeue(log_buffer)->word;
+    if (log_buffer->queue_size <= 0) {
+      pthread_mutex_unlock(&log_buffer_lock);
+      continue;
+    }
     
-    // open log.txt file and write item to file
+    char *word = dequeue(log_buffer)->word;
+    pthread_mutex_unlock(&log_buffer_lock);
+
+    if (word == NULL)
+      continue;
+
+    // Aquire log file lock
+    pthread_mutex_lock(&log_file_lock);
+
+    // Safely write to the log file
     FILE *log_file = fopen(DEFAULT_LOG_FILE, "a");
     fputs(word, log_file);
     fputc('\n', log_file);
-
-    // close log.txt file
     fclose(log_file);
 
-    // Release the lock
-    pthread_mutex_unlock(&log_buffer_lock);
+    // Release log file lock
+    pthread_mutex_unlock(&log_file_lock);
   }
-  
+
   return NULL;
 }
