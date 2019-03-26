@@ -16,6 +16,11 @@
 #define BUFFER_SIZE 256
 #define DEFAULT_PORT 8010
 #define NUM_WORKERS 2
+#define NUM_LOGGERS 1
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t dataNotProduced = PTHREAD_COND_INITIALIZER;
+pthread_cond_t dataNotConsumed = PTHREAD_COND_INITIALIZER;
 
 int main(int argc, char **argv) {
   int port;
@@ -75,13 +80,13 @@ int main(int argc, char **argv) {
 
   // Setup threads for workers
   pthread_t workers[NUM_WORKERS];
-  for (int i=0; i<NUM_WORKERS; i++) {
+  for (int i=0; i<NUM_WORKERS; i++)
     workers[i] = pthread_create(&workers[i], NULL, &worker_thread, job_buffer);
-  }
 
   // Setup thread for log file
-  pthread_t logger;
-  logger = pthread_create(&logger, NULL, &logger_thread, log_buffer);
+  pthread_t loggers[NUM_LOGGERS];
+  for (int i=0; i<NUM_LOGGERS; i++)
+    loggers[i] = pthread_create(&loggers[i], NULL, &logger_thread, log_buffer);
 
   char *conn_success = "Connected to server. Please wait for further instructions.\n";
   while(1) {
