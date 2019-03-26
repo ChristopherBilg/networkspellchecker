@@ -2,8 +2,13 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include "fifo_queue.h"
 #include "main.h"
+#include "open_listenfd.h"
+#include "client.h"
 
 #define DEFAULT_DICTIONARY "words.txt"
 #define DEFAULT_LOG_FILE "log.txt"
@@ -78,12 +83,26 @@ int main(int argc, char **argv) {
   pthread_t logger;
   logger = pthread_create(&logger, NULL, &logger_thread, log_buffer);
 
+  char *conn_success = "Connected to server. Please wait for further instructions.\n";
   while(1) {
     // Setup socket
+    struct my_client client;
+    client.client_size = sizeof(struct sockaddr_in);
+    client.recv_buffer[0] = '\0';
+    client.connection_socket = open_listenfd(port);
+    if (client.connection_socket == -1)
+      continue;
+
     // Accept connection
+    // TODO: THIS MIGHT NOT WORK BECAUSE OF THE WHILE LOOP: TRY NO WHILE LOOP
+    client.client_socket = accept(client.connection_socket,
+                                  (struct sockaddr *)&client.client,
+                                  &client.client_size);
+    printf("Connected to a new client!\n");
+    send(client.client_socket, conn_success, strlen(conn_success), 0);
+
     // Put it into the job queue
-    
-    break;
+    enqueue(job_buffer, client, NULL);
   }
 
   printf("Server on port %d exited successfully.\n", port);
