@@ -1,8 +1,10 @@
 #ifndef FIFO_QUEUE_H
 #define FIFO_QUEUE_H
 
+#include "client.h"
+
 struct Node {
-  int fd;
+  struct my_client client;
   char *word; // only used if fd value is -1
   struct Node *next;
 };
@@ -13,9 +15,9 @@ struct Queue {
 };
 
 struct Queue *createQueue();
-void destoryQueue(struct Queue *queue);
-struct Node *createNode(int fd, char *word);
-void enqueue(struct Queue *queue, int fd, char *word);
+void destroyQueue(struct Queue *queue);
+struct Node *createNode(struct my_client client, char *word);
+void enqueue(struct Queue *queue, struct my_client client, char *word);
 struct Node *dequeue(struct Queue *queue);
 
 #endif

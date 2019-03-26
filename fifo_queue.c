@@ -12,16 +12,16 @@ void destroyQueue(struct Queue *queue) {
   free(queue);
 }
 
-struct Node *createNode(int fd, char *word) {
+struct Node *createNode(struct my_client client, char *word) {
   struct Node *temp = (struct Node *)malloc(sizeof(struct Node));
-  temp->fd = fd;
+  temp->client = client;
   temp->word = word;
   temp->next = NULL;
   return temp;
 }
 
-void enqueue(struct Queue *queue, int fd, char *word) {
-  struct Node *temp = createNode(fd, word);
+void enqueue(struct Queue *queue, struct my_client client, char *word) {
+  struct Node *temp = createNode(client, word);
   queue->queue_size++;
 
   // If queue is empty, then new node is front and rear both
