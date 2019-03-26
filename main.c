@@ -1,12 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <string.h>
 #include "fifo_queue.h"
 #include "main.h"
 
 #define DEFAULT_DICTIONARY "words.txt"
 #define DEFAULT_LOG_FILE "log.txt"
-#define DICTIONARY_SIZE 1000000
+#define DICTIONARY_SIZE 100000
 #define BUFFER_SIZE 256
 #define DEFAULT_PORT 8010
 #define NUM_WORKERS 2
@@ -54,12 +55,18 @@ int main(int argc, char **argv) {
   char *dictionary_list[DICTIONARY_SIZE];
   char line[BUFFER_SIZE];
   int index = 0;
-  while (fgets(line, sizeof(line), dictionary_fd)) {
+  while (fgets(line, sizeof(line), dictionary_fd) && index < DICTIONARY_SIZE) {
+    if (feof(dictionary_fd))
+      break;
+
+    int str_len = strlen(line);
+    if (line[str_len-1] == '\n')
+      line[str_len-1] = '\0';
+
     dictionary_list[index] = line;
     index++;
   }
   fclose(dictionary_fd);
-  printf("%s\n", dictionary_list[0]);
 
   // Setup threads for workers
   pthread_t workers[NUM_WORKERS];
@@ -71,12 +78,15 @@ int main(int argc, char **argv) {
   pthread_t logger;
   logger = pthread_create(&logger, NULL, &logger_thread, log_buffer);
 
-  // while(1) {
-  // Setup socket
-  // Accept connection
-  // Put it into the job queue
-  // }
-  
+  while(1) {
+    // Setup socket
+    // Accept connection
+    // Put it into the job queue
+    
+    break;
+  }
+
+  printf("Server on port %d exited successfully.\n", port);
   return EXIT_SUCCESS;
 }
 
