@@ -137,11 +137,9 @@ void *worker_thread(void *params) {
 
 void *logger_thread(void *params) {
   while(1) {
-    // dequeue item from log buffer (critical section)
-    char *word;
+    // Aquire the lock
     pthread_mutex_lock(&log_buffer_lock);
-    word = dequeue(log_buffer)->word;
-    pthread_mutex_unlock(&log_buffer_lock);
+    char *word = dequeue(log_buffer)->word;
     
     // open log.txt file and write item to file
     FILE *log_file = fopen(DEFAULT_LOG_FILE, "a");
@@ -150,6 +148,9 @@ void *logger_thread(void *params) {
 
     // close log.txt file
     fclose(log_file);
+
+    // Release the lock
+    pthread_mutex_unlock(&log_buffer_lock);
   }
   
   return NULL;
