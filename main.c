@@ -168,6 +168,10 @@ void *worker_thread(void *params) {
 
         printf("%s | 0\n", recv_buffer);
         fflush(stdout);
+
+        // send()
+
+        // Log buffer enqueue
       }
     }
   }
