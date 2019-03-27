@@ -152,7 +152,7 @@ void *worker_thread(void *params) {
     while (1) {
       send(client.client_socket, prompt_msg, strlen(prompt_msg), 0);
       client.bytes_returned = recv(client.client_socket, recv_buffer, BUFFER_SIZE, 0);
-
+      
       // Handle the message (error, exit, etc.)
       if (client.bytes_returned == -1) {
         send(client.client_socket, error_msg, strlen(error_msg), 0);
@@ -171,7 +171,7 @@ void *worker_thread(void *params) {
         int str_len = strlen(recv_buffer);
         if (recv_buffer[str_len-1] == '\n')
           recv_buffer[str_len-1] = '\0';
-
+        
         current_word = strtok(recv_buffer, DEFAULT_DELIMITER);
         int index = 0;
         while (current_word != NULL) {
@@ -189,23 +189,32 @@ void *worker_thread(void *params) {
           current_word = strtok(NULL, DEFAULT_DELIMITER);
         }
 
-        // handle the spell checking
-        char *validity = "WRONG";
-        int i1 = 0;
-        int i2 = 0;
-        while (all_words[i1] != NULL) {
-          while (dictionary_list[i2] != NULL) {
-            if (all_words[i1] == dictionary_list[i2])
-              validity = "CORRECT";
-            i2++;
-          }
-
-          // respond with results
-          // put the reponse into the log queue
-
-          validity = "WRONG";
-          i1++;
-        }
+        /**************************************************************/
+        /* // handle the spell checking                               */
+        /* int i1 = 0;                                                */
+        /* while (all_words[i1] != NULL) {                            */
+        /*   int i2 = 0;                                              */
+        /*   char *validity = " WRONG";                               */
+        /*   while (dictionary_list[i2] != NULL) {                    */
+        /*     if (all_words[i1] == dictionary_list[i2])              */
+        /*       validity = " CORRECT";                               */
+        /*     i2++;                                                  */
+        /*   }                                                        */
+        /*                                                            */
+        /*   // respond with results                                  */
+        /*   char *results = "";                                      */
+        /*   strcat(results, all_words[i1]);                          */
+        /*   strcat(results, all_words[i1]);                          */
+        /*   send(client.client_socket, results, strlen(results), 0); */
+        /*                                                            */
+        /*   // put the reponse into the log queue                    */
+        /*   pthread_mutex_lock(&log_buffer_lock);                    */
+        /*   enqueue(log_buffer, client, results);                    */
+        /*   pthread_mutex_unlock(&log_buffer_lock);                  */
+        /*                                                            */
+        /*   i1++;                                                    */
+        /* }                                                          */
+        /**************************************************************/
       }
     }
   }
