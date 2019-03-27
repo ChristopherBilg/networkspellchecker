@@ -13,8 +13,8 @@
 
 #define DEFAULT_DICTIONARY "words.txt"
 #define DEFAULT_LOG_FILE "log.txt"
-#define DEFAULT_DELIMITER " \t\r\n\a"
-#define DICTIONARY_SIZE 100000
+#define DEFAULT_DELIMITER " \n"
+#define DICTIONARY_SIZE 99171
 #define BUFFER_SIZE 256
 #define DEFAULT_PORT 8010
 #define NUM_WORKERS 2
@@ -27,7 +27,7 @@ pthread_mutex_t log_file_lock;
 struct Queue *job_buffer;
 struct Queue *log_buffer;
 
-char *dictionary_list[DICTIONARY_SIZE];
+char dictionary_list[DICTIONARY_SIZE][BUFFER_SIZE];
 
 int main(int argc, char **argv) {
   int port;
@@ -74,20 +74,16 @@ int main(int argc, char **argv) {
   pthread_mutex_init(&log_file_lock, NULL);
   
   // Setup the dictionary array
-  char line[BUFFER_SIZE];
-  int index = 0;
-  while (fgets(line, sizeof(line), dictionary_fd) && index < DICTIONARY_SIZE) {
-    if (feof(dictionary_fd))
-      break;
-
-    int str_len = strlen(line);
-    if (line[str_len-1] == '\n')
-      line[str_len-1] = '\0';
-
-    dictionary_list[index] = line;
-    index++;
+  for (int i=0; i<99171; i++) {
+    fgets(dictionary_list[i], sizeof(dictionary_list[i]), dictionary_fd);
   }
   fclose(dictionary_fd);
+
+  for (int i=0; i<99171; i++) {
+    int str_len = strlen(dictionary_list[i]);
+    if (dictionary_list[i][str_len-1] == '\n')
+      dictionary_list[i][str_len-1] = '\0';
+  }
 
   // Setup threads for workers
   pthread_t workers[NUM_WORKERS];
@@ -118,7 +114,9 @@ int main(int argc, char **argv) {
     send(client.client_socket, conn_success, strlen(conn_success), 0);
     
     // Put it into the job queue
+    pthread_mutex_lock(&job_buffer_lock);
     enqueue(job_buffer, client, NULL);
+    pthread_mutex_unlock(&job_buffer_lock);
   }
 
   printf("Server on port %d exited successfully.\n", port);
@@ -132,7 +130,6 @@ void *worker_thread(void *params) {
   char *prompt_msg = "Words to be spell checked (separate with a space): ";
   char *close_msg = "You can closed the connection with the server.\n";
   char *error_msg = "The message didn't come through correctly. Please send it again.\n";
-  char recv_buffer[BUFFER_SIZE];
 
   while (1) {
     // Safely dequeue connection socket information from job queue
@@ -147,9 +144,10 @@ void *worker_thread(void *params) {
 
     // Get the client struct
     struct my_client client = job->client;
-
+    
     // communicate with client through recv()/send()
     while (1) {
+      char recv_buffer[BUFFER_SIZE];
       send(client.client_socket, prompt_msg, strlen(prompt_msg), 0);
       client.bytes_returned = recv(client.client_socket, recv_buffer, BUFFER_SIZE, 0);
       
@@ -164,57 +162,12 @@ void *worker_thread(void *params) {
         break;
       }
       else {
-        char **all_words = malloc(BUFFER_SIZE * sizeof(char *));
-        char *current_word;
-        int buf_size = BUFFER_SIZE;
+        int recv_length = strlen(recv_buffer);
+        if (recv_buffer[recv_length-1] == '\n')
+          recv_buffer[recv_length-1] = '\0';
 
-        int str_len = strlen(recv_buffer);
-        if (recv_buffer[str_len-1] == '\n')
-          recv_buffer[str_len-1] = '\0';
-        
-        current_word = strtok(recv_buffer, DEFAULT_DELIMITER);
-        int index = 0;
-        while (current_word != NULL) {
-          all_words[index] = current_word;
-          index++;
-
-          if (index >= buf_size) {
-            buf_size *= 2;
-            void *temp = realloc(all_words, buf_size * sizeof(char *));
-
-            if (temp == NULL)
-              free(temp);
-          }
-
-          current_word = strtok(NULL, DEFAULT_DELIMITER);
-        }
-
-        /**************************************************************/
-        /* // handle the spell checking                               */
-        /* int i1 = 0;                                                */
-        /* while (all_words[i1] != NULL) {                            */
-        /*   int i2 = 0;                                              */
-        /*   char *validity = " WRONG";                               */
-        /*   while (dictionary_list[i2] != NULL) {                    */
-        /*     if (all_words[i1] == dictionary_list[i2])              */
-        /*       validity = " CORRECT";                               */
-        /*     i2++;                                                  */
-        /*   }                                                        */
-        /*                                                            */
-        /*   // respond with results                                  */
-        /*   char *results = "";                                      */
-        /*   strcat(results, all_words[i1]);                          */
-        /*   strcat(results, all_words[i1]);                          */
-        /*   send(client.client_socket, results, strlen(results), 0); */
-        /*                                                            */
-        /*   // put the reponse into the log queue                    */
-        /*   pthread_mutex_lock(&log_buffer_lock);                    */
-        /*   enqueue(log_buffer, client, results);                    */
-        /*   pthread_mutex_unlock(&log_buffer_lock);                  */
-        /*                                                            */
-        /*   i1++;                                                    */
-        /* }                                                          */
-        /**************************************************************/
+        printf("%s | 0\n", recv_buffer);
+        fflush(stdout);
       }
     }
   }
