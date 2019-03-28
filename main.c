@@ -17,7 +17,7 @@
 #define DICTIONARY_SIZE 99171
 #define BUFFER_SIZE 256
 #define DEFAULT_PORT 8010
-#define NUM_WORKERS 2
+#define NUM_WORKERS 1
 #define NUM_LOGGERS 1
 
 pthread_mutex_t job_buffer_lock;
@@ -147,7 +147,7 @@ void *worker_thread(void *params) {
     
     // communicate with client through recv()/send()
     while (1) {
-      char recv_buffer[BUFFER_SIZE];
+      char recv_buffer[BUFFER_SIZE] = "";
       send(client.client_socket, prompt_msg, strlen(prompt_msg), 0);
       client.bytes_returned = recv(client.client_socket, recv_buffer, BUFFER_SIZE, 0);
       
@@ -162,13 +162,11 @@ void *worker_thread(void *params) {
         break;
       }
       else {
-        int recv_length = strlen(recv_buffer);
-        if (recv_buffer[recv_length-1] == '\n')
-          recv_buffer[recv_length-1] = '\0';
-
-        printf("%s | 0\n", recv_buffer);
-        fflush(stdout);
-
+        char *recvd = recv_buffer;
+        for (int i=0; i<DICTIONARY_SIZE; i++)
+          if (strcmp(recvd, dictionary_list[i]))
+            
+            
         // send()
 
         // Log buffer enqueue
