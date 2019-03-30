@@ -1,8 +1,8 @@
 #+STARTUP: showeverything
 * TODO [0/6] [0%]
- - [ ] Make logger work correctly
- - [ ] Make accepting of multiple words per tcp connection work correctly
- - [ ] Testing req. 1
- - [ ] Testing req. 2
- - [ ] Testing req. 3
- - [ ] Testing req. 4
+ 1. [ ] Testing req. 1
+ 2. [ ] Testing req. 2
+ 3. [ ] Testing req. 3
+ 4. [ ] Testing req. 4
+ 5. [ ] Make logger work correctly
+ 6. [ ] Make accepting of multiple words per tcp recv() work correctly

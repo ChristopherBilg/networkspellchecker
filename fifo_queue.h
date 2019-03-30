@@ -12,9 +12,10 @@ struct Node {
 struct Queue {
   struct Node *front, *rear;
   int queue_size;
+  int max_size;
 };
 
-struct Queue *createQueue();
+struct Queue *createQueue(int max_size);
 void destroyQueue(struct Queue *queue);
 struct Node *createNode(struct my_client client, char *word);
 void enqueue(struct Queue *queue, struct my_client client, char *word);

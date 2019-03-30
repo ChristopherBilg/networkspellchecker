@@ -1,10 +1,11 @@
 #include <stdlib.h>
 #include "fifo_queue.h"
 
-struct Queue *createQueue() {
+struct Queue *createQueue(int max_size) {
   struct Queue *temp = (struct Queue *)malloc(sizeof(struct Queue));
   temp->front = temp->rear = NULL;
   temp->queue_size = 0;
+  temp->max_size = max_size;
   return temp;
 }
 

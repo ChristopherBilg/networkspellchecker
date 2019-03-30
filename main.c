@@ -18,7 +18,9 @@
 #define BUFFER_SIZE 256
 #define DEFAULT_PORT 8010
 #define NUM_WORKERS 2
+#define JOB_BUFFER_SIZE 10
 #define NUM_LOGGERS 1
+#define LOG_BUFFER_SIZE 1000
 
 pthread_mutex_t job_buffer_lock;
 pthread_mutex_t log_buffer_lock;
@@ -65,8 +67,8 @@ int main(int argc, char **argv) {
   }
   
   // Initialize the fifo_queues for the two C/P buffers
-  job_buffer = createQueue();
-  log_buffer = createQueue();
+  job_buffer = createQueue(JOB_BUFFER_SIZE);
+  log_buffer = createQueue(LOG_BUFFER_SIZE);
 
   // Initialize the mutex locks
   pthread_mutex_init(&job_buffer_lock, NULL);
@@ -102,11 +104,16 @@ int main(int argc, char **argv) {
   client.connection_socket = open_listenfd(port);
   
   char *conn_success = "Connected to server. Please wait for further instructions.\n";
+  char *buffer_full = "Sorry, the job buffer is full. Please try again later.\n";
   while(1) {
     // Accept connection
     client.client_socket = accept(client.connection_socket, (struct sockaddr *)&client.client, &client.client_size);
     if (client.client_socket == -1)
       continue;
+
+    if(job_buffer->queue_size >= job_buffer->max_size) {
+      send(client.client_socket, buffer_full, strlen(buffer_full), 0);
+    }
     
     printf("Connected to a new client! ");
     printf("Client: %d\n", client.client_socket);
