@@ -103,15 +103,13 @@ int main(int argc, char **argv) {
   
   char *conn_success = "Connected to server. Please wait for further instructions.\n";
   while(1) {
-    printf("main\n");
-    
     // Accept connection
     client.client_socket = accept(client.connection_socket, (struct sockaddr *)&client.client, &client.client_size);
     if (client.client_socket == -1)
       continue;
     
-    printf("Connected to a new client!\n");
-    printf("Client: %d\n", client.connection_socket);
+    printf("Connected to a new client! ");
+    printf("Client: %d\n", client.client_socket);
     send(client.client_socket, conn_success, strlen(conn_success), 0);
     
     // Put it into the job queue
@@ -211,8 +209,8 @@ void *logger_thread(void *params) {
     pthread_mutex_lock(&log_file_lock);
 
     // Safely write to the log file
-    FILE *log_file = fopen(DEFAULT_LOG_FILE, "a+");
-    fprintf(log_file, "%s", word);
+    FILE *log_file = fopen(DEFAULT_LOG_FILE, "a");
+    fwrite(word, sizeof(word[0]), sizeof(word)/sizeof(word[0]), log_file);
     fclose(log_file);
 
     // Release log file lock
