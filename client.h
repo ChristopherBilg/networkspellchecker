@@ -9,7 +9,7 @@ struct my_client {
   int client_size;
   int connection_socket;
   int client_socket;
-  int bytes_returned;
+  ssize_t bytes_returned;
   char recv_buffer[BUFFER_SIZE];
 };
 

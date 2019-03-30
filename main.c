@@ -17,7 +17,7 @@
 #define DICTIONARY_SIZE 99171
 #define BUFFER_SIZE 256
 #define DEFAULT_PORT 8010
-#define NUM_WORKERS 1
+#define NUM_WORKERS 2
 #define NUM_LOGGERS 1
 
 pthread_mutex_t job_buffer_lock;
@@ -88,22 +88,22 @@ int main(int argc, char **argv) {
   // Setup threads for workers
   pthread_t workers[NUM_WORKERS];
   for (int i=0; i<NUM_WORKERS; i++)
-    workers[i] = pthread_create(&workers[i], NULL, &worker_thread, job_buffer);
+    workers[i] = pthread_create(&workers[i], NULL, &worker_thread, NULL);
 
   // Setup thread for log file
   pthread_t loggers[NUM_LOGGERS];
   for (int i=0; i<NUM_LOGGERS; i++)
-    loggers[i] = pthread_create(&loggers[i], NULL, &logger_thread, log_buffer);
+    loggers[i] = pthread_create(&loggers[i], NULL, &logger_thread, NULL);
+
+  // Setup socket
+  struct my_client client;
+  client.client_size = sizeof(struct sockaddr_in);
+  client.recv_buffer[0] = '\0';
+  client.connection_socket = open_listenfd(port);
   
   char *conn_success = "Connected to server. Please wait for further instructions.\n";
   while(1) {
-    // Setup socket
-    struct my_client client;
-    client.client_size = sizeof(struct sockaddr_in);
-    client.recv_buffer[0] = '\0';
-    client.connection_socket = open_listenfd(port);
-    if (client.connection_socket == -1)
-      continue;
+    printf("main\n");
     
     // Accept connection
     client.client_socket = accept(client.connection_socket, (struct sockaddr *)&client.client, &client.client_size);
@@ -111,6 +111,7 @@ int main(int argc, char **argv) {
       continue;
     
     printf("Connected to a new client!\n");
+    printf("Client: %d\n", client.connection_socket);
     send(client.client_socket, conn_success, strlen(conn_success), 0);
     
     // Put it into the job queue
@@ -128,7 +129,7 @@ int main(int argc, char **argv) {
 
 void *worker_thread(void *params) {
   char *prompt_msg = "Words to be spell checked (separate with a space): ";
-  char *close_msg = "You can closed the connection with the server.\n";
+  char *close_msg = "You closed the connection with the server.\n";
   char *error_msg = "The message didn't come through correctly. Please send it again.\n";
 
   while (1) {
@@ -152,7 +153,7 @@ void *worker_thread(void *params) {
       client.bytes_returned = recv(client.client_socket, recv_buffer, BUFFER_SIZE, 0);
       
       // Handle the message (error, exit, etc.)
-      if (client.bytes_returned == -1) {
+      if (client.bytes_returned <= -1) {
         send(client.client_socket, error_msg, strlen(error_msg), 0);
         continue;
       }
@@ -163,13 +164,27 @@ void *worker_thread(void *params) {
       }
       else {
         char *recvd = recv_buffer;
+        int bytes = client.bytes_returned;
+        recvd[strlen(recvd)-1] = '\0';
+
+        recvd[bytes-2] = '\0';
+
+        char *valid = " WRONG\n";
         for (int i=0; i<DICTIONARY_SIZE; i++)
-          if (strcmp(recvd, dictionary_list[i]))
-            
-            
+          if (strcmp(recvd, dictionary_list[i]) == 0)
+            valid = " CORRECT\n";
+
+        char *ptr = recvd;
+        strcat(ptr, valid);
+        printf("%s", ptr);
+        
         // send()
+        send(client.client_socket, ptr, strlen(ptr), 0);
 
         // Log buffer enqueue
+        pthread_mutex_lock(&log_buffer_lock);
+        enqueue(log_buffer, client, ptr);
+        pthread_mutex_unlock(&log_buffer_lock);
       }
     }
   }
@@ -196,9 +211,8 @@ void *logger_thread(void *params) {
     pthread_mutex_lock(&log_file_lock);
 
     // Safely write to the log file
-    FILE *log_file = fopen(DEFAULT_LOG_FILE, "a");
-    fputs(word, log_file);
-    fputc('\n', log_file);
+    FILE *log_file = fopen(DEFAULT_LOG_FILE, "a+");
+    fprintf(log_file, "%s", word);
     fclose(log_file);
 
     // Release log file lock
