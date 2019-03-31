@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "fifo_queue.h"
 
+// Create and return the Queue struct
 struct Queue *createQueue(int max_size) {
   struct Queue *temp = (struct Queue *)malloc(sizeof(struct Queue));
   temp->front = temp->rear = NULL;
@@ -9,10 +10,12 @@ struct Queue *createQueue(int max_size) {
   return temp;
 }
 
+// Destory a Queue struct in memory
 void destroyQueue(struct Queue *queue) {
   free(queue);
 }
 
+// Create and return a Node struct, used in Queue struct
 struct Node *createNode(struct my_client client, char *word) {
   struct Node *temp = (struct Node *)malloc(sizeof(struct Node));
   temp->client = client;
@@ -21,6 +24,7 @@ struct Node *createNode(struct my_client client, char *word) {
   return temp;
 }
 
+// Add a Node struct onto a Queue struct
 void enqueue(struct Queue *queue, struct my_client client, char *word) {
   struct Node *temp = createNode(client, word);
   queue->queue_size++;
@@ -40,6 +44,7 @@ void enqueue(struct Queue *queue, struct my_client client, char *word) {
   return;
 }
 
+// Remove a Node struct from a Queue struct
 struct Node *dequeue(struct Queue *queue) {
   // If queue is empty, return NULL.
   if (queue->front == NULL) {

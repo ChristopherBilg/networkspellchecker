@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #define BUFFER_SIZE 256
 
+// Simple struct that contains all of the client socket information
 struct my_client {
   struct sockaddr_in client;
   int client_size;

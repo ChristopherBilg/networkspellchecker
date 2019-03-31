@@ -11,6 +11,7 @@
 #include "open_listenfd.h"
 #include "client.h"
 
+// Global static definitions
 #define DEFAULT_DICTIONARY "words.txt"
 #define DEFAULT_LOG_FILE "log.txt"
 #define DEFAULT_DELIMITER " \n"
@@ -31,11 +32,13 @@ struct Queue *log_buffer;
 
 char dictionary_list[DICTIONARY_SIZE][BUFFER_SIZE];
 
+// Will create n threads of worker and m threads of loggers to handle all incoming and logging of spell checks
 int main(int argc, char **argv) {
   int port;
   char *dictionary;
   FILE *dictionary_fd;
 
+  // Check for given vs. default port number and dictionary file
   if(argc >= 3) {
     port = atoi(argv[1]);
     dictionary = argv[2];
@@ -132,6 +135,7 @@ int main(int argc, char **argv) {
   return EXIT_SUCCESS;
 }
 
+// n worker threads are created to handle n many concurrent spell checking clients
 void *worker_thread(void *params) {
   char *prompt_msg = "Words to be spell checked (separate with a space): ";
   char *close_msg = "You closed the connection with the server.\n";
@@ -197,6 +201,7 @@ void *worker_thread(void *params) {
   return NULL;
 }
 
+// m logger threads (generally just 1) are created to quickly handle all logging of spell checked words
 void *logger_thread(void *params) {
   while(1) {
     // Safely dequeue from the log buffer

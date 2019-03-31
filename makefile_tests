@@ -1,6 +1,8 @@
+# The final output file for testing purposes
 output_tests: tests.o fifo_queue.o
 	gcc -o output_tests tests.o fifo_queue.o -lpthread
 
+# The following are all object files that are linked together above
 tests.o: tests.c
 	gcc -o tests.o tests.c -c -lpthread
 

@@ -11,12 +11,15 @@
 
 char dictionary_list[99171][256];
 
+// Main function that will run all 4 required tests
 int main(int argc, char **argv) {
   char *test = "Test Number: ";
 
+  // Test 1
   printf("%s1\n", test);
   printf("The required screenshots for this testing module are found in the /screenshots directory.\n\n");
 
+  // Test 2
   printf("%s2\n", test);
   pthread_t threads[NUM_THREADS+1];
   for (int i=0; i<NUM_THREADS; i++)
@@ -25,6 +28,7 @@ int main(int argc, char **argv) {
   for (int i=0; i<NUM_THREADS; i++)
     pthread_join(threads[i], NULL);
 
+  // Test 3
   printf("%s3\n", test);
   struct Queue *queue = createQueue(QUEUE_SIZE);
   struct my_client client;
@@ -39,6 +43,9 @@ int main(int argc, char **argv) {
     dequeue(queue);
   printf("Dequeue of more than QUEUE_SIZE was successful.\n");
 
+  // Test 4
+  printf("%s4\n", test);
+  
   char input[100];
   printf("Please input a test word for spell checking: ");
   fgets(input, 100, stdin);
@@ -66,6 +73,7 @@ int main(int argc, char **argv) {
   printf("%s%s", input, valid);
 }
 
+// Simple function that each thread will run once
 void *thread_print_prompt(void *params) {
   printf("I am a thread running.\n");
   return NULL;
