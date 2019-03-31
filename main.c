@@ -217,7 +217,7 @@ void *logger_thread(void *params) {
 
     // Safely write to the log file
     FILE *log_file = fopen(DEFAULT_LOG_FILE, "a");
-    fwrite(word, sizeof(word[0]), sizeof(word)/sizeof(word[0]), log_file);
+    fwrite(&word, sizeof(word[0]), sizeof(word)/sizeof(word[0]), log_file);
     fclose(log_file);
 
     // Release log file lock
