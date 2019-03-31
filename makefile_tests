@@ -1,0 +1,5 @@
+output_tests: tests.o
+	gcc -o output_tests tests.o
+
+tests.o: tests.c
+	gcc -o tests.o tests.c -c
