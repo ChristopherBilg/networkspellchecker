@@ -1,8 +1,9 @@
 #+STARTUP: showeverything
-* TODO [0/6] [0%]
- 1. [ ] Testing req. 1
+* TODO [1/7] [14%]
+ 1. [X] Testing req. 1
  2. [ ] Testing req. 2
  3. [ ] Testing req. 3
  4. [ ] Testing req. 4
- 5. [ ] Make logger work correctly
- 6. [ ] Make accepting of multiple words per tcp recv() work correctly
+ 5. [ ] Comment all files!
+ 6. [ ] Make logger work correctly
+ 7. [ ] Make accepting of multiple words per tcp recv() work correctly
