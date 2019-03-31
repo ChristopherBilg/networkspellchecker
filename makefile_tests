@@ -1,5 +1,8 @@
-output_tests: tests.o
-	gcc -o output_tests tests.o -lpthread
+output_tests: tests.o fifo_queue.o
+	gcc -o output_tests tests.o fifo_queue.o -lpthread
 
 tests.o: tests.c
 	gcc -o tests.o tests.c -c -lpthread
+
+fifo_queue.o: fifo_queue.c
+	gcc -o fifo_queue.o fifo_queue.c -c

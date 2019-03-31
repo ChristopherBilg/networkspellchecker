@@ -1,8 +1,8 @@
 #+STARTUP: showeverything
-* TODO [2/7] [28%]
+* TODO [3/7] [42%]
  1. [X] Testing req. 1
  2. [X] Testing req. 2
- 3. [ ] Testing req. 3
+ 3. [X] Testing req. 3
  4. [ ] Testing req. 4
  5. [ ] Comment all files!
  6. [ ] Make logger work correctly
