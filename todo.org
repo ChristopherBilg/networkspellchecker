@@ -1,7 +1,7 @@
 #+STARTUP: showeverything
-* TODO [1/7] [14%]
+* TODO [2/7] [28%]
  1. [X] Testing req. 1
- 2. [ ] Testing req. 2
+ 2. [X] Testing req. 2
  3. [ ] Testing req. 3
  4. [ ] Testing req. 4
  5. [ ] Comment all files!
